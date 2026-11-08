@@ -1,28 +1,55 @@
-using System.ComponentModel.DataAnnotations;
-using SchoolAdmission.Api.Models;
+using System.Text.Json.Serialization;
 
 namespace SchoolAdmission.Api.Contracts;
 
-public sealed record ClassResponse(
-    Guid Id,
-    string Name,
-    string Grade,
-    int Capacity,
-    int AvailableSeats);
+public record CreateClassRequest(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("totalSeats")] int TotalSeats
+);
 
-public sealed record CreateHoldRequest(
-    [property: Required, StringLength(100, MinimumLength = 2)] string StudentName);
+public record CreateClassResponse(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("totalSeats")] int TotalSeats
+);
 
-public sealed record HoldResponse(
-    Guid Id,
-    Guid ClassId,
-    string ClassName,
-    string StudentName,
-    DateTimeOffset ExpiresAt,
-    string Status)
-{
-    public static HoldResponse From(SeatHold hold) =>
-        new(hold.Id, hold.SchoolClassId, hold.SchoolClass!.Name, hold.StudentName,
-            hold.ExpiresAt, hold.Status.ToString());
-}
+public record ClassSummaryResponse(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("totalSeats")] int TotalSeats,
+    [property: JsonPropertyName("heldSeats")] int HeldSeats,
+    [property: JsonPropertyName("confirmedSeats")] int ConfirmedSeats,
+    [property: JsonPropertyName("availableSeats")] int AvailableSeats
+);
 
+public record CreateHoldResponse(
+    [property: JsonPropertyName("holdId")] string HoldId,
+    [property: JsonPropertyName("classId")] string ClassId,
+    [property: JsonPropertyName("studentId")] string StudentId,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("expiresAt")] string ExpiresAt
+);
+
+public record HoldDetailResponse(
+    [property: JsonPropertyName("holdId")] string HoldId,
+    [property: JsonPropertyName("classId")] string ClassId,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("expiresAt")] string ExpiresAt
+);
+
+public record ConfirmHoldResponse(
+    [property: JsonPropertyName("holdId")] string HoldId,
+    [property: JsonPropertyName("status")] string Status
+);
+
+public record MyHoldResponse(
+    [property: JsonPropertyName("holdId")] string HoldId,
+    [property: JsonPropertyName("classId")] string ClassId,
+    [property: JsonPropertyName("className")] string ClassName,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("expiresAt")] string ExpiresAt
+);
+
+public record ErrorResponse(
+    [property: JsonPropertyName("message")] string Message
+);

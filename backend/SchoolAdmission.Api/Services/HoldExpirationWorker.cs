@@ -4,34 +4,32 @@ using SchoolAdmission.Api.Models;
 
 namespace SchoolAdmission.Api.Services;
 
-public sealed class HoldExpirationWorker(IServiceScopeFactory scopeFactory, ILogger<HoldExpirationWorker> logger)
-    : BackgroundService
+public class HoldExpirationWorker(
+    IServiceProvider serviceProvider,
+    ILogger<HoldExpirationWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using PeriodicTimer timer = new(TimeSpan.FromSeconds(30));
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+        while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
-                await using IServiceScope scope = scopeFactory.CreateAsyncScope();
-                AppDbContext db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                int count = await db.Holds
-                    .Where(x => x.Status == HoldStatus.Active && x.ExpiresAt <= DateTimeOffset.UtcNow)
-                    .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Status, HoldStatus.Expired),
+                using var scope = serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var now = DateTime.UtcNow;
+
+                await db.SeatHolds
+                    .Where(h => h.Status == HoldStatus.Held && h.ExpiresAt <= now)
+                    .ExecuteUpdateAsync(
+                        setters => setters.SetProperty(h => h.Status, HoldStatus.Expired),
                         stoppingToken);
-                if (count > 0)
-                    logger.LogInformation("Expired {Count} seat holds", count);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                return;
-            }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, "Failed to expire seat holds");
+                logger.LogWarning(ex, "Error while expiring overdue seat holds.");
             }
         }
     }
 }
-
