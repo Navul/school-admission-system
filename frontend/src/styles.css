@@ -1,0 +1,9 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #172033; background: #f5f7fb; }
+* { box-sizing: border-box; } body { margin: 0; } main { max-width: 980px; margin: auto; padding: 64px 24px; }
+header { margin-bottom: 48px; } h1 { font-size: clamp(2.4rem, 6vw, 4.5rem); line-height: 1; margin: 8px 0 16px; max-width: 700px; }
+h2 { margin-top: 0; } header p { color: #63708a; font-size: 1.1rem; } .eyebrow, .grade { color: #5b52d6; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .75rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; } .card { background: white; border: 1px solid #e3e7f0; border-radius: 16px; padding: 24px; box-shadow: 0 8px 25px #202d4d0b; }
+button.card { text-align: left; color: inherit; cursor: pointer; } button.card:hover, button.selected { border-color: #5b52d6; transform: translateY(-2px); } button:disabled { cursor: not-allowed; opacity: .5; }
+.class-card { transition: .15s ease; } .class-card h3 { margin: 12px 0 8px; font-size: 1.3rem; } .class-card span:last-child { color: #63708a; }
+.form { max-width: 520px; margin-top: 32px; display: grid; gap: 12px; } label { font-weight: 600; } input { border: 1px solid #cbd2e1; border-radius: 8px; padding: 13px; font: inherit; } button { border: 0; border-radius: 8px; padding: 13px 18px; background: #5b52d6; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+.secondary { background: #e9ebf5; color: #303750; } .notice { margin-bottom: 24px; padding: 14px 18px; border-radius: 8px; background: #e8f4ee; color: #23613f; } .confirmation { max-width: 580px; }
