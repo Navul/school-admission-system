@@ -1,13 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SchoolAdmission.Api.Models;
 
-public sealed class SchoolClass
+[Table("classes")]
+public class SchoolClass
 {
-    public Guid Id { get; set; }
-    public required string Name { get; set; }
-    public required string Grade { get; set; }
-    public int Capacity { get; set; }
-    public int ConfirmedAdmissions { get; set; }
-    public byte[] Version { get; set; } = [];
-    public ICollection<SeatHold> Holds { get; set; } = [];
-}
+    [Key]
+    [Column("id")]
+    public string Id { get; set; } = $"c_{Guid.NewGuid():N}"[..10];
 
+    [Required]
+    [Column("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [Column("total_seats")]
+    public int TotalSeats { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<SeatHold> Holds { get; set; } = new();
+}

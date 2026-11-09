@@ -33,7 +33,7 @@ var app = builder.Build();
 
 app.UseCors();
 
-// Auto-create/migrate database schema on startup so `docker compose up` works out of the box
+// Auto-create database schema on startup so `docker compose up` works out of the box
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -187,7 +187,6 @@ app.MapPost("/classes/{classId}/holds", async (string classId, HttpContext ctx, 
     await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
 
     // Acquire row-level lock on the target class row in PostgreSQL.
-    // This serializes concurrent requests for the same class across 1 or multiple backend instances.
     var lockedClass = await db.Classes
         .FromSqlInterpolated($"SELECT * FROM classes WHERE id = {classId} FOR UPDATE")
         .FirstOrDefaultAsync();
@@ -197,12 +196,10 @@ app.MapPost("/classes/{classId}/holds", async (string classId, HttpContext ctx, 
 
     var now = DateTime.UtcNow;
 
-    // Immediately expire any overdue holds for this class inside the locked transaction
     await db.SeatHolds
         .Where(h => h.ClassId == classId && h.Status == HoldStatus.Held && h.ExpiresAt <= now)
         .ExecuteUpdateAsync(s => s.SetProperty(h => h.Status, HoldStatus.Expired));
 
-    // Rule: A student cannot have more than one active HELD or CONFIRMED application in the same class
     bool alreadyHasActiveApplication = await db.SeatHolds.AnyAsync(h =>
         h.ClassId == classId &&
         h.StudentId == studentId &&
@@ -290,7 +287,6 @@ app.MapPost("/holds/{holdId}/confirm", async (string holdId, HttpContext ctx, Ap
     if (hold.StudentId != studentId)
         return Results.Json(new ErrorResponse("শুধুমাত্র নিজের আবেদন নিশ্চিত করা যাবে।"), statusCode: StatusCodes.Status403Forbidden);
 
-    // Idempotency rule: multiple confirm calls on an already-confirmed hold return 200 OK without incrementing confirmedSeats twice
     if (hold.Status == HoldStatus.Confirmed)
     {
         await tx.CommitAsync();
@@ -372,19 +368,28 @@ app.MapGet("/me/holds", async (HttpContext ctx, AppDbContext db) =>
 
     await SyncExpiredHoldsAsync(db, studentId: studentId);
 
-    var holds = await db.SeatHolds
+    var rawHolds = await db.SeatHolds
         .AsNoTracking()
         .Include(h => h.SchoolClass)
         .Where(h => h.StudentId == studentId)
         .OrderByDescending(h => h.CreatedAt)
-        .Select(h => new MyHoldResponse(
+        .Select(h => new
+        {
             h.HoldId,
             h.ClassId,
-            h.SchoolClass != null ? h.SchoolClass.Name : string.Empty,
+            ClassName = h.SchoolClass != null ? h.SchoolClass.Name : string.Empty,
             h.Status,
-            FormatUtcIso(h.ExpiresAt)
-        ))
+            h.ExpiresAt
+        })
         .ToListAsync();
+
+    var holds = rawHolds.Select(h => new MyHoldResponse(
+        h.HoldId,
+        h.ClassId,
+        h.ClassName,
+        h.Status,
+        FormatUtcIso(h.ExpiresAt)
+    ));
 
     return Results.Ok(holds);
 });
@@ -398,7 +403,7 @@ static string NormalizeConnectionString(string input)
     {
         var uri = new Uri(input);
         var userInfo = uri.UserInfo.Split(':', 2);
-        var builder = new NpgsqlConnectionStringBuilder
+        var connBuilder = new NpgsqlConnectionStringBuilder
         {
             Host = uri.Host,
             Port = uri.Port > 0 ? uri.Port : 5432,
@@ -406,10 +411,9 @@ static string NormalizeConnectionString(string input)
             Username = Uri.UnescapeDataString(userInfo[0]),
             Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty
         };
-        return builder.ConnectionString;
+        return connBuilder.ConnectionString;
     }
     return input;
 }
 
-// Expose Program class for WebApplicationFactory in automated tests
 public partial class Program { }
