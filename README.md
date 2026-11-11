@@ -1,36 +1,34 @@
 # School Admission System
 
-A small full-stack admission portal for viewing classes and temporarily holding an available seat.
+A concurrency-safe online school admission and seat reservation system built with **.NET 8 Minimal APIs**, **PostgreSQL 16**, **React 18 (Vite + TypeScript)**, and **Docker**.
 
-## Run with Docker
+## Prerequisites
+- **Docker** and **Docker Compose** (Nothing else needs to be installed on the host machine).
 
-```bash
-docker compose up --build
-```
+---
 
-Open <http://localhost:5173>. The API is available at <http://localhost:8080>.
+## Quick Start (Running with Docker)
 
-## Run locally
-
-The API uses PostgreSQL by default. Set `ConnectionStrings__Default` to a reachable database
-connection string, then run:
+From the root directory of the repository, run:
 
 ```bash
-cd backend
-dotnet run --project SchoolAdmission.Api
+docker compose up --builds
 
-cd ../frontend
-npm install
-npm run dev
-```
 
-The API seeds sample classes on first startup. A seat hold expires after ten minutes unless
-confirmed. This sample intentionally has no authentication or payment integration.
+Service URLs
+Frontend UI: http://localhost:5173
 
-## API
+Backend API: http://localhost:8080
 
-- `GET /api/classes` lists classes and remaining seats.
-- `POST /api/classes/{classId}/holds` creates a temporary hold. Body: `{ "studentName": "..." }`.
-- `DELETE /api/holds/{holdId}` releases a hold.
-- `POST /api/holds/{holdId}/confirm` confirms an active hold.
+PostgreSQL Database: localhost:5432 (persisted via Docker volume pgdata)
 
+Environment Variables
+Backend (docker-compose.yml):
+
+DATABASE_URL: PostgreSQL connection string (supports both Npgsql key-value format and postgres:// URI format).
+
+HOLD_DURATION_SECONDS: Seat hold expiration time in seconds (default: 600).
+
+Frontend (docker-compose.yml build args / env):
+
+VITE_API_BASE_URL: Backend base URL (default: http://localhost:8080).
