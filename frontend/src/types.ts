@@ -1,17 +1,49 @@
-export type SchoolClass = {
+export type HoldStatus = 'HELD' | 'CONFIRMED' | 'EXPIRED' | 'CANCELLED';
+
+export interface SchoolClassSummary {
   id: string;
   name: string;
-  grade: string;
-  capacity: number;
+  totalSeats: number;
+  heldSeats: number;
+  confirmedSeats: number;
   availableSeats: number;
-};
+}
 
-export type Hold = {
+export interface CreateClassRequest {
+  name: string;
+  totalSeats: number;
+}
+
+export interface CreateClassResponse {
   id: string;
+  name: string;
+  totalSeats: number;
+}
+
+export interface CreateHoldResponse {
+  holdId: string;
+  classId: string;
+  studentId: string;
+  status: HoldStatus;
+  expiresAt: string;
+}
+
+export interface HoldDetailResponse {
+  holdId: string;
+  classId: string;
+  status: HoldStatus;
+  expiresAt: string;
+}
+
+export interface ConfirmHoldResponse {
+  holdId: string;
+  status: HoldStatus;
+}
+
+export interface MyHoldItem {
+  holdId: string;
   classId: string;
   className: string;
-  studentName: string;
+  status: HoldStatus;
   expiresAt: string;
-  status: string;
-};
-
+}
